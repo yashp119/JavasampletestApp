@@ -22,7 +22,8 @@ pipeline {
                 script {
                     // Assuming your project is in a subdirectory called 'java-se-jetty-gradle-v3'
                     dir('java-se-jetty-gradle-v3') {
-                        sh "zip -r ${BuildName}.zip *"
+                        // Use '.' to include all files in the current directory
+                        sh "zip -r ${BuildName}.zip ."
                         sh "aws s3 cp ${BuildName}.zip s3://${BucketName} --region us-east-1"
                         sh "rm ${BuildName}.zip"
                     }
