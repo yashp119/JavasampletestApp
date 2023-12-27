@@ -1,55 +1,54 @@
 pipeline {
-    agent any
+    agent any  // Declare the agent to run the pipeline
 
     environment {
-        BuildName = "version-${BUILD_NUMBER}"
-        BucketName = "yashbucketdhhffh"
-        BucketKey = "S3-builds-Storage"
-        ApplicationName = "practice"
-        EnvironmentName = "Practice-env"
+        // Define environment variables for sensitive information
+        BUILD_NAME = "version-$BUILD_NUMBER"
+        BUCKET_NAME = "yashbucketdhhffh"
+        BUCKET_KEY = "S3-builds-Storage"
+        APPLICATION_NAME = "practice"
+        ENVIRONMENT_NAME = "Practice-env"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                // Checkout your source code from version control (e.g., Git)
-                checkout scm
+                echo "Building the application..."
+                // Assuming build steps are within a Gradle project
+                sh 'cd java-se-jetty-gradle-v3 && gradle build'
             }
         }
 
-        stage('Build and Package') {
+        stage('Package') {
             steps {
-                script {
-                    // Change to your project directory
-                    dir('java-se-jetty-gradle-v3') {
-                        // Build and package your application
-                        sh 'gradle build'
-
-                        // Zip the artifacts
-                        sh 'zip -r ${BuildName}.zip *'
-                    }
-                }
+                echo "Packaging the application..."
+                sh "cd java-se-jetty-gradle-v3 && zip -r $BUILD_NAME.zip *"
             }
         }
 
         stage('Upload to S3') {
             steps {
-                script {
-                    // Upload the artifact to S3
-                    sh "aws s3 cp ${BuildName}.zip s3://${BucketName}/${BucketKey}/ --region ap-south-1"
+                echo "Uploading the package to S3..."
+                withAWS(credentials: 'your-aws-credentials', region: 'ap-south-1') {
+                    s3Upload(bucket: env.BUCKET_NAME, file: "java-se-jetty-gradle-v3/$BUILD_NAME.zip", path: env.BUCKET_KEY)
                 }
             }
         }
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                script {
-                    // Create application version
-                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --source-bundle S3Bucket=${BucketName},S3Key=${BucketKey}/${BuildName}.zip --region ap-south-1"
-
-                    // Update environment with new version
-                    sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region ap-south-1"
+                echo "Deploying to Elastic Beanstalk..."
+                withAWS(credentials: 'your-aws-credentials', region: 'ap-south-1') {
+                    ebCreateApplicationVersion(applicationName: env.APPLICATION_NAME, versionLabel: env.BUILD_NAME, description: "Build created from JENKINS. Job:$JOB_NAME, BuildId:$BUILD_DISPLAY_NAME, GitCommit:$GIT_COMMIT, GitBranch:$GIT_BRANCH", sourceBundle: env.BUCKET_NAME + "/" + env.BUCKET_KEY + "/" + env.BUILD_NAME + ".zip")
+                    ebUpdateEnvironment(environmentName: env.ENVIRONMENT_NAME, versionLabel: env.BUILD_NAME)
                 }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                echo "Cleaning up workspace..."
+                sh "rm /var/lib/jenkins/workspace/new-file-jenkins/java-se-jetty-gradle-v3/$BUILD_NAME.zip"
             }
         }
     }
