@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         BuildName = "version-${BUILD_NUMBER}"
-        BucketName = "yashbucketdhhffh"
+        BucketName = "mymybucketgg"
         ApplicationName = "yash-java-application"
         EnvironmentName = "Yash-java-application-env"
         ZipFileName = "app.zip"
