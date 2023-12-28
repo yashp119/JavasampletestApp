@@ -4,8 +4,8 @@ pipeline {
     environment {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "mymybucketgg"
-        ApplicationName = "yash-java-application" // Adjust this to your Elastic Beanstalk application name
-        EnvironmentName = "Practice-env" // Adjust this to your Elastic Beanstalk environment name
+        ApplicationName = "yash-java-application"
+        EnvironmentName = "Practice-env"
         ZipFileName = "app.zip"
     }
 
@@ -20,8 +20,8 @@ pipeline {
         stage('Create Zip File') {
             steps {
                 script {
-                    // Archive the contents of the repository into a zip file excluding Jenkinsfile
-                    sh "zip -r ${ZipFileName} ./* -x Jenkinsfile"
+                    // Exclude Jenkinsfile from the zip file
+                    sh "zip -r ${ZipFileName} . -x Jenkinsfile"
                 }
             }
         }
@@ -29,7 +29,6 @@ pipeline {
         stage('Upload Zip to S3') {
             steps {
                 script {
-                    // Upload the zip file to S3
                     sh "aws s3 cp ${ZipFileName} s3://${BucketName}/${ZipFileName} --region us-east-1"
                 }
             }
@@ -38,7 +37,6 @@ pipeline {
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
-                    // Create an Elastic Beanstalk application version from the uploaded zip file
                     sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --source-bundle S3Bucket='${BucketName}',S3Key='${ZipFileName}' --region us-east-1"
                 }
             }
@@ -47,7 +45,6 @@ pipeline {
         stage('Update Beanstalk Environment') {
             steps {
                 script {
-                    // Update the Elastic Beanstalk environment with the new application version
                     sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1"
                 }
             }
