@@ -4,8 +4,8 @@ pipeline {
     environment {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "yashbucketdhhffh"
-        ApplicationName = "practice"
-        EnvironmentName = "Practice-env"
+        ApplicationName = "yash-java-application"
+        EnvironmentName = "Yash-java-application-env"
     }
 
     stages {
