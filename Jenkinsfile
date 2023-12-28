@@ -6,7 +6,6 @@ pipeline {
         BucketName = "yashbucketdhhffh"
         ApplicationName = "practice"
         EnvironmentName = "Practice-env"
-        S3BucketPath = "" // Empty string for the root of the bucket
     }
 
     stages {
@@ -20,6 +19,7 @@ pipeline {
         stage('Upload to S3') {
             steps {
                 script {
+                    def S3BucketPath = "" // Empty string for the root of the bucket
                     // Upload the contents of the repository to the root of the S3 bucket
                     sh "aws s3 sync . s3://${BucketName}/${S3BucketPath} --region us-east-1"
                 }
