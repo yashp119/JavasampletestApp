@@ -11,7 +11,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Assuming you are using Git for version control
                 checkout scm
             }
         }
@@ -19,8 +18,7 @@ pipeline {
         stage('Upload to S3') {
             steps {
                 script {
-                    def S3BucketPath = "" // Empty string for the root of the bucket
-                    // Upload the contents of the repository to the root of the S3 bucket
+                    def S3BucketPath = ""
                     sh "aws s3 sync . s3://${BucketName}/${S3BucketPath} --region us-east-1"
                 }
             }
@@ -38,6 +36,22 @@ pipeline {
             steps {
                 script {
                     sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1"
+                }
+            }
+        }
+
+        stage('Delete Old Beanstalk Versions') {
+            steps {
+                script {
+                    def versionsToDelete = sh(script: "aws elasticbeanstalk describe-application-versions --application-name ${ApplicationName} --query 'Versions[*].[VersionLabel]' --output text --region us-east-1", returnStdout: true).trim().split()
+                    
+                    // Sort versions in descending order
+                    versionsToDelete = versionsToDelete.sort().reverse()
+
+                    // Keep the latest two versions, delete the rest
+                    versionsToDelete.drop(2).each { version ->
+                        sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${version} --region us-east-1"
+                    }
                 }
             }
         }
