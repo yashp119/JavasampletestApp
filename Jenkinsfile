@@ -3,48 +3,50 @@ pipeline {
 
     environment {
         BuildName = "version-${BUILD_NUMBER}"
-        BucketName = "mymybucketgg"
+        BucketName = "yashbucketdhhffh"
+        BucketKey = "S3-builds-Storage"
         ApplicationName = "yash-java-application"
-        EnvironmentName = "Practice-env"
-        ZipFileName = "app.zip"
+        EnvironmentName = "Yash-java-application-env"
+        SourceDirectory = "java-se-jetty-gradle-v3"
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Assuming you are using Git for version control
-                checkout scm
-            }
-        }
-
-        stage('Create Zip File') {
+        stage('Prepare') {
             steps {
                 script {
-                    // Exclude Jenkinsfile from the zip file
-                    sh "zip -r ${ZipFileName} . -x Jenkinsfile"
+                    // Change to the source directory
+                    dir(SourceDirectory) {
+                        // Zip the contents of the source directory
+                        sh "zip -r ${BuildName}.zip *"
+                        // Upload the zip file to S3
+                        sh "aws s3 cp ${BuildName}.zip s3://${BucketName}/${BucketKey}/ --region us-east-1"
+                    }
                 }
             }
         }
 
-        stage('Upload Zip to S3') {
+        stage('Clean Up') {
             steps {
                 script {
-                    sh "aws s3 cp ${ZipFileName} s3://${BucketName}/${ZipFileName} --region us-east-1"
+                    // Remove the local zip file
+                    sh "rm ${WORKSPACE}/${SourceDirectory}/${BuildName}.zip"
                 }
             }
         }
 
-        stage('Create Beanstalk Application Version') {
+        stage('Create Application Version') {
             steps {
                 script {
-                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --source-bundle S3Bucket='${BucketName}',S3Key='${ZipFileName}' --region us-east-1"
+                    // Create Beanstalk Application Version
+                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:$JOB_NAME, BuildId:$BUILD_DISPLAY_NAME, GitCommit:$GIT_COMMIT, GitBranch:$GIT_BRANCH' --source-bundle S3Bucket=${BucketName},S3Key=${BucketKey}/${BuildName}.zip --region us-east-1"
                 }
             }
         }
 
-        stage('Update Beanstalk Environment') {
+        stage('Update Environment') {
             steps {
                 script {
+                    // Update Beanstalk Environment
                     sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1"
                 }
             }
