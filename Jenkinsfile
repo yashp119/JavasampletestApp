@@ -4,8 +4,8 @@ pipeline {
     environment {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "mymybucketgg"
-        ApplicationName = "yash-java-application"
-        EnvironmentName = "Yash-java-application-env"
+        ApplicationName = "yash-java-application" // Adjust this to your Elastic Beanstalk application name
+        EnvironmentName = "Practice-env" // Adjust this to your Elastic Beanstalk environment name
         ZipFileName = "app.zip"
     }
 
@@ -20,8 +20,8 @@ pipeline {
         stage('Create Zip File') {
             steps {
                 script {
-                    // Archive the contents of the repository into a zip file
-                    sh "zip -r ${ZipFileName} ./*"
+                    // Archive the contents of the repository into a zip file excluding Jenkinsfile
+                    sh "zip -r ${ZipFileName} ./* -x Jenkinsfile"
                 }
             }
         }
