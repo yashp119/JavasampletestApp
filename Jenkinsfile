@@ -44,12 +44,12 @@ pipeline {
             steps {
                 script {
                     def versionsToDelete = sh(script: "aws elasticbeanstalk describe-application-versions --application-name ${ApplicationName} --query 'Versions[*].[VersionLabel]' --output text --region us-east-1", returnStdout: true).trim().split()
-                    
-                    // Sort versions in descending order
-                    versionsToDelete = versionsToDelete.sort().reverse()
+
+                    // Sort versions in ascending order
+                    versionsToDelete = versionsToDelete.sort()
 
                     // Keep the latest two versions, delete the rest
-                    versionsToDelete.drop(2).each { version ->
+                    versionsToDelete.drop(versionsToDelete.size() - 2).each { version ->
                         sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${version} --region us-east-1"
                     }
                 }
