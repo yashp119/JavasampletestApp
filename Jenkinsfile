@@ -27,7 +27,10 @@ pipeline {
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
-                    sh "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --region us-east-1"
+                    def response = sh(script: "aws elasticbeanstalk create-application-version --application-name '${ApplicationName}' --version-label '${BuildName}' --description 'Build created from JENKINS. Job:${JOB_NAME}, BuildId:${BUILD_DISPLAY_NAME}, GitCommit:${GIT_COMMIT}, GitBranch:${GIT_BRANCH}' --region us-east-1", returnStatus: true)
+                    if (response != 0) {
+                        error "Failed to create Beanstalk application version"
+                    }
                 }
             }
         }
@@ -35,7 +38,10 @@ pipeline {
         stage('Update Beanstalk Environment') {
             steps {
                 script {
-                    sh "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1"
+                    def response = sh(script: "aws elasticbeanstalk update-environment --environment-name '${EnvironmentName}' --version-label '${BuildName}' --region us-east-1", returnStatus: true)
+                    if (response != 0) {
+                        error "Failed to update Beanstalk environment"
+                    }
                 }
             }
         }
@@ -49,7 +55,7 @@ pipeline {
                     versionsToDelete = versionsToDelete.sort()
 
                     // Keep the latest two versions, delete the rest
-                    versionsToDelete.drop(versionsToDelete.size() - 2).each { version ->
+                    versionsToDelete[0..(versionsToDelete.size() - 3)].each { version ->
                         sh "aws elasticbeanstalk delete-application-version --application-name ${ApplicationName} --version-label ${version} --region us-east-1"
                     }
                 }
