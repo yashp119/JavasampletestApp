@@ -1,13 +1,14 @@
 pipeline {
     agent any
- 
+
     environment {
         BuildName = "version-${BUILD_NUMBER}"
         BucketName = "yashbucketdhhffh"
-        ApplicationName = "yash-java-application"
-        EnvironmentName = "Yash-java-application-env"
+        ApplicationName = "practice"
+        EnvironmentName = "Practice-env"
+        S3BucketPath = "" // Empty string for the root of the bucket
     }
- 
+
     stages {
         stage('Checkout') {
             steps {
@@ -15,7 +16,16 @@ pipeline {
                 checkout scm
             }
         }
- 
+
+        stage('Upload to S3') {
+            steps {
+                script {
+                    // Upload the contents of the repository to the root of the S3 bucket
+                    sh "aws s3 sync . s3://${BucketName}/${S3BucketPath} --region us-east-1"
+                }
+            }
+        }
+
         stage('Create Beanstalk Application Version') {
             steps {
                 script {
@@ -23,7 +33,7 @@ pipeline {
                 }
             }
         }
- 
+
         stage('Update Beanstalk Environment') {
             steps {
                 script {
